@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Meta -->
+  <meta charset="UTF-8"><!-- character encoding -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"><!-- responsive scaling -->
+  <title>To-Do List App (2024)</title>
+
+  <!-- Styles: clean, responsive, accessible -->
+  <style>
+    :root {
+      --bg: #0f1222;
+      --card: #151935;
+      --muted: #8a94b0;
+      --text: #e7e9f3;
+      --accent: #6aa6ff;
+      --accent-2: #74f0c0;
+      --danger: #ff6b6b;
+      --ring: rgba(106, 166, 255, 0.35);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial;
+      background: radial-gradient(1200px 800px at 10% -10%, #1b2046, transparent) , var(--bg);
+      color: var(--text);
+      display: grid;
+      place-items: start center;
+      padding: 32px 16px 64px;
+    }
+
+    .app {
+      width: min(900px, 92vw);
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent), var(--card);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      overflow: hidden;
+    }
+
+    .header {
+      padding: 24px 24px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .title {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 700; letter-spacing: 0.3px; font-size: 20px;
+    }
+    .title .badge {
+      font-size: 12px; font-weight: 600; color: var(--bg);
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      padding: 4px 8px; border-radius: 999px;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 10px;
+      padding: 12px 24px 16px;
+    }
+    .search, .filter, .actions {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 10px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .search input {
+      flex: 1; background: transparent; border: none; outline: none; color: var(--text);
+      padding: 6px;
+    }
+    .chip {
+      padding: 6px 10px; border-radius: 999px; cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+      font-size: 13px;
+      user-select: none;
+    }
+    .chip[aria-pressed="true"] {
+      background: rgba(116, 240, 192, 0.15);
+      border-color: var(--accent-2);
+    }
+
+    .actions button {
+      all: unset; padding: 8px 12px; border-radius: 10px; cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+      font-size: 14px;
+    }
+    .actions button.danger {
+      border-color: rgba(255,107,107,0.45);
+      background: rgba(255,107,107,0.08);
+      color: #ffb4b4;
+    }
+
+    .add {
+      padding: 0 24px 8px;
+    }
+    .add form {
+      display: flex; gap: 10px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 10px;
+      outline: 2px solid transparent;
+    }
+    .add form:focus-within { box-shadow: 0 0 0 4px var(--ring); }
+    .add input[type="text"] {
+      flex: 1; background: transparent; border: none; outline: none; color: var(--text);
+      padding: 10px; font-size: 16px;
+    }
+    .add button {
+      all: unset;
+      padding: 10px 14px; border-radius: 10px; cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #0b1120; font-weight: 700; font-size: 14px;
+    }
+
+    .list {
+      padding: 8px 12px 18px;
+    }
+    ul#list {
+      list-style: none; margin: 0; padding: 0;
+      display: grid; gap: 10px;
+    }
+    .item {
+      display: grid;
+      grid-template-columns: 28px 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+    }
+    .item.done .title-line { text-decoration: line-through; color: var(--muted); }
+    .item .title-line { display: flex; align-items: center; gap: 8px; }
+    .item .meta { font-size: 12px; color: var(--muted); }
+    .item .actions {
+      display: flex; gap: 6px; align-items: center;
+      background: transparent; border: none; padding: 0;
+    }
+    .icon-btn {
+      all: unset; cursor: pointer; padding: 8px; border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+    }
+    .icon-btn:hover { background: rgba(255,255,255,0.06); }
+    .icon-btn.danger { border-color: rgba(255,107,107,0.45); }
+
+    .footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 24px 22px; color: var(--muted); font-size: 13px;
+    }
+
+    @media (max-width: 720px) {
+      .controls { grid-template-columns: 1fr; }
+      .item { grid-template-columns: 28px 1fr; grid-auto-rows: minmax(0, auto); }
+      .item .actions { grid-column: 2 / -1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app" role="application" aria-label="To-Do List application">
+    <div class="header">
+      <div class="title">
+        <span>✅ To-Do List</span>
+        <span class="badge">2024 • HTML/CSS/JS</span>
+      </div>
+      <div id="counter" aria-live="polite" aria-atomic="true">0 tasks</div>
+    </div>
+
+    <!-- Controls row: search, filter chips, actions -->
+    <div class="controls" aria-label="Controls">
+      <div class="search" role="search">
+        🔎
+        <input id="search" type="text" placeholder="Search tasks (live)…" aria-label="Search tasks">
+      </div>
+      <div class="filter" role="group" aria-label="Filter">
+        <button class="chip" data-filter="all" aria-pressed="true" aria-label="Show all tasks">All</button>
+        <button class="chip" data-filter="active" aria-pressed="false" aria-label="Show active tasks">Active</button>
+        <button class="chip" data-filter="completed" aria-pressed="false" aria-label="Show completed tasks">Completed</button>
+      </div>
+      <div class="actions">
+        <button id="clearCompleted" class="danger" aria-label="Clear completed tasks">Clear completed</button>
+      </div>
+    </div>
+
+    <!-- Add form -->
+    <div class="add">
+      <form id="form" autocomplete="off" aria-label="Add a new task">
+        <input id="input" type="text" placeholder="E.g., Prepare sprint demo…" aria-label="Task title">
+        <button type="submit" aria-label="Add task">Add</button>
+      </form>
+    </div>
+
+    <!-- List -->
+    <div class="list">
+      <ul id="list" aria-label="Tasks list"></ul>
+    </div>
+
+    <div class="footer">
+      <div>Tip: Double-click a task title to edit. Press Enter to save, Esc to cancel.</div>
+      <div>Data saved locally (no internet required).</div>
+    </div>
+  </div>
+
+  <!-- App Script -->
+  <script>
+    "use strict"; // Enforce stricter parsing & error handling by JavaScript.
+
+    /* ===========
+       State & Utils
+       =========== */
+
+    const STORAGE_KEY = "todos-2024"; // Key used for localStorage persistence.
+    let state = [];                    // In-memory list of task objects: { id, title, done, createdAt }.
+    let currentFilter = "all";         // Current filter: "all" | "active" | "completed".
+    let searchQuery = "";              // Current live search query string.
+
+    // DOM references (grab once, reuse)
+    const listEl = document.getElementById("list");          // <ul> element that holds task <li>s.
+    const formEl = document.getElementById("form");          // Add-task <form>.
+    const inputEl = document.getElementById("input");        // Text input inside the form.
+    const counterEl = document.getElementById("counter");    // Counter in the header.
+    const searchEl = document.getElementById("search");      // Live search input.
+    const clearBtn = document.getElementById("clearCompleted"); // Button to clear completed tasks.
+    const filterChips = Array.from( // All filter chip buttons.
+      document.querySelectorAll(".filter .chip")
+    );
+
+    // Generate a unique id for each task (timestamp + random suffix).
+    const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
+
+    // Read array of tasks from localStorage; on failure, fall back to [].
+    function load() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);             // Read raw JSON string.
+        state = raw ? JSON.parse(raw) : [];                        // Parse or set empty array.
+      } catch (e) {
+        console.warn("Failed to load tasks:", e);                  // Log and recover.
+        state = [];
+      }
+    }
+
+    // Persist current state array to localStorage.
+    function save() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));  // Serialize and store.
+      } catch (e) {
+        console.warn("Failed to save tasks:", e);                  // Non-fatal; UI still works.
+      }
+    }
+
+    // Small helper: set pressed state on filter chips for accessibility & styling.
+    function updateFilterChips() {
+      filterChips.forEach(btn => {
+        const pressed = btn.dataset.filter === currentFilter;        // Is this chip active?
+        btn.setAttribute("aria-pressed", String(pressed));           // Reflect as string "true"/"false".
+      });
+    }
+
+    // Debounce utility for inputs like live search (avoid firing on every keystroke).
+    function debounce(fn, delay = 200) {
+      let t;                                                        // Timer id.
+      return (...args) => {                                         // Return a wrapped function.
+        clearTimeout(t);                                            // Reset timer on every call.
+        t = setTimeout(() => fn(...args), delay);                   // Invoke after delay.
+      };
+    }
+
+    /* ===========
+       State mutations
+       =========== */
+
+    // Add a new task with given title; ignores empty/whitespace titles.
+    function addTask(title) {
+      const clean = title.trim();                              // Remove leading/trailing whitespace.
+      if (!clean) return;                                      // Skip if empty.
+      state.push({                                             // Push new task object.
+        id: uid(),                                            // Unique id.
+        title: clean,                                         // Task title.
+        done: false,                                          // Not completed by default.
+        createdAt: Date.now()                                 // Timestamp (ms).
+      });
+      save();                                                 // Persist to localStorage.
+      render();                                               // Re-render UI to reflect new state.
+    }
+
+    // Toggle completion status for a task by id.
+    function toggleTask(id) {
+      const t = state.find(x => x.id === id);                 // Find the task object.
+      if (!t) return;                                         // Safety check.
+      t.done = !t.done;                                       // Flip its 'done' flag.
+      save();                                                 // Persist.
+      render();                                               // Re-render UI.
+    }
+
+    // Delete a task by id.
+    function deleteTask(id) {
+      state = state.filter(x => x.id !== id);                 // Keep everything except matching id.
+      save();                                                 // Persist.
+      render();                                               // Re-render UI.
+    }
+
+    // Update a task title by id; ignore if empty/whitespace.
+    function updateTaskTitle(id, newTitle) {
+      const clean = newTitle.trim();                          // Trim value.
+      if (!clean) return;                                     // Ignore empty.
+      const t = state.find(x => x.id === id);                 // Find task.
+      if (!t) return;                                         // Safety check.
+      t.title = clean;                                        // Update title.
+      save();                                                 // Persist.
+      render();                                               // Re-render UI.
+    }
+
+    // Clear all completed tasks from the list.
+    function clearCompletedTasks() {
+      state = state.filter(x => !x.done);                     // Keep only active tasks.
+      save();                                                 // Persist.
+      render();                                               // Re-render UI.
+    }
+
+    /* ===========
+       Rendering
+       =========== */
+
+    // Derive a "view" of tasks after applying filter and search.
+    function getVisibleTasks() {
+      let items = state.slice();                               // Shallow copy original array.
+      if (currentFilter === "active") items = items.filter(x => !x.done);        // Only active.
+      if (currentFilter === "completed") items = items.filter(x => x.done);      // Only completed.
+      if (searchQuery) {                                      // Apply live search if any.
+        const q = searchQuery.toLowerCase();                  // Case-insensitive compare.
+        items = items.filter(x => x.title.toLowerCase().includes(q));
+      }
+      return items;                                           // Return derived list.
+    }
+
+    // Update the counter text (e.g., "3 of 7 tasks • 4 active").
+    function updateCounter() {
+      const total = state.length;                              // Total tasks.
+      const active = state.filter(x => !x.done).length;        // Active tasks count.
+      const completed = total - active;                        // Completed tasks count.
+      counterEl.textContent = `${active} active • ${completed} completed • ${total} total`; // Display.
+    }
+
+    // Create a single <li> DOM node for a task.
+    function renderItem(task) {
+      const li = document.createElement("li");                 // Create list item.
+      li.className = `item${task.done ? " done" : ""}`;        // Add class for styling (and done variant).
+      li.dataset.id = task.id;                                 // Store id for event delegation.
+
+      // Checkbox (toggle done)
+      const checkbox = document.createElement("input");        // Create input element.
+      checkbox.type = "checkbox";                              // Make it a checkbox.
+      checkbox.checked = task.done;                            // Reflect current done state.
+      checkbox.setAttribute("aria-label", "Toggle task done"); // Accessibility label.
+
+      // Title area (supports double-click to edit)
+      const titleWrap = document.createElement("div");         // Container for title line.
+      titleWrap.className = "title-line";                      // For layout and line-through.
+      const title = document.createElement("span");            // Actual text node container.
+      title.textContent = task.title;                          // Set visible title text.
+      title.title = "Double-click to edit";                    // Hover hint.
+      title.className = "title-text";                          // Hook for editing.
+      title.tabIndex = 0;                                      // Make focusable (keyboard users).
+
+      // Meta (created time)
+      const meta = document.createElement("span");             // Small meta text.
+      meta.className = "meta";                                 // Style as subtle text.
+      const d = new Date(task.createdAt);                      // Convert timestamp to Date.
+      meta.textContent = d.toLocaleString();                   // Localized display.
+
+      titleWrap.appendChild(title);                            // Add title into wrapper.
+      titleWrap.appendChild(meta);                             // Add meta after title.
+
+      // Actions (edit + delete buttons; edit is redundant to double-click but good for mobile)
+      const actions = document.createElement("div");           // Container for action buttons.
+      actions.className = "actions";                           // Inherit action styles.
+
+      const editBtn = document.createElement("button");        // Edit button.
+      editBtn.className = "icon-btn";                          // Icon-like button visuals.
+      editBtn.setAttribute("aria-label", "Edit task");         // Accessibility label.
+      editBtn.textContent = "✏️";                              // Simple icon.
+
+      const delBtn = document.createElement("button");         // Delete button.
+      delBtn.className = "icon-btn danger";                    // Danger style.
+      delBtn.setAttribute("aria-label", "Delete task");        // Accessibility label.
+      delBtn.textContent = "🗑️";                               // Simple icon.
+
+      actions.appendChild(editBtn);                            // Place edit button.
+      actions.appendChild(delBtn);                             // Place delete button.
+
+      // Assemble the <li>
+      li.appendChild(checkbox);                                // Col 1: checkbox.
+      li.appendChild(titleWrap);                               // Col 2: title/meta.
+      li.appendChild(actions);                                 // Col 3: actions.
+
+      return li;                                               // Return fully composed node.
+    }
+
+    // Main render function: updates list and header counter.
+    function render() {
+      const items = getVisibleTasks();                         // Compute visible tasks.
+      listEl.innerHTML = "";                                   // Clear current DOM list.
+      const frag = document.createDocumentFragment();          // Use fragment for fewer reflows.
+      items.forEach(task => frag.appendChild(renderItem(task)));// Build items in memory.
+      listEl.appendChild(frag);                                // Inject into DOM at once.
+      updateCounter();                                         // Refresh header counts.
+      updateFilterChips();                                     // Reflect filter selection.
+    }
+
+    /* ===========
+       Event wiring
+       =========== */
+
+    // Add task on form submit (supports Enter key)
+    formEl.addEventListener("submit", (e) => {
+      e.preventDefault();                                      // Stop page reload.
+      addTask(inputEl.value);                                  // Add from input value.
+      inputEl.value = "";                                      // Clear input for next task.
+      inputEl.focus();                                         // Keep focus for fast entry.
+    });
+
+    // Live search with debounce to avoid re-render on each keystroke
+    const onSearch = debounce((e) => {
+      searchQuery = e.target.value;                            // Update query string.
+      render();                                                // Re-render derived list.
+    }, 200);
+    searchEl.addEventListener("input", onSearch);              // Attach to input event.
+
+    // Filter chip clicks: set currentFilter and re-render
+    filterChips.forEach(btn => {
+      btn.addEventListener("click", () => {                    // On click of a chip…
+        currentFilter = btn.dataset.filter;                    // Read its filter type.
+        updateFilterChips();                                   // Update aria-pressed styles.
+        render();                                              // Re-render list view.
+      });
+    });
+
+    // Clear completed tasks button
+    clearBtn.addEventListener("click", () => {
+      clearCompletedTasks();                                   // Remove all done tasks.
+    });
+
+    // Event delegation for list: handle checkbox toggle, delete, edit, and title dblclick/keyboard
+    listEl.addEventListener("click", (e) => {
+      const li = e.target.closest(".item");                    // Find the closest item row.
+      if (!li) return;                                         // Ignore clicks outside items.
+      const id = li.dataset.id;                                // Get item id.
+
+      if (e.target.matches('input[type="checkbox"]')) {        // Click on checkbox?
+        toggleTask(id);                                        // Flip done state.
+      } else if (e.target.matches('.icon-btn.danger')) {       // Click on delete button?
+        deleteTask(id);                                        // Remove item.
+      } else if (e.target.matches('.icon-btn')) {              // Click on edit button?
+        startInlineEdit(li, id);                               // Begin inline editing.
+      }
+    });
+
+    // Double-click title to edit; also Enter to edit when focused for keyboard users
+    listEl.addEventListener("dblclick", (e) => {
+      const title = e.target.closest(".title-text");           // Target title span.
+      if (!title) return;                                      // Not a title? ignore.
+      const li = title.closest(".item");                       // Get owning list item.
+      startInlineEdit(li, li.dataset.id);                      // Begin editing.
+    });
+
+    listEl.addEventListener("keydown", (e) => {
+      // If title focused and user presses Enter, start editing (keyboard accessibility)
+      if (e.key === "Enter" && e.target.matches(".title-text")) {
+        const li = e.target.closest(".item");
+        startInlineEdit(li, li.dataset.id);
+      }
+    });
+
+    /* ===========
+       Inline editing
+       =========== */
+
+    function startInlineEdit(li, id) {
+      const titleSpan = li.querySelector(".title-text");       // Existing title display.
+      const original = titleSpan.textContent;                  // Preserve original text.
+      const input = document.createElement("input");           // Create an input field.
+      input.type = "text";                                     // Text input.
+      input.value = original;                                  // Pre-fill with current title.
+      input.className = "edit-input";                          // Hook for potential styles.
+      input.style.width = "100%";                              // Stretch to available width.
+
+      // Replace the span with the input
+      titleSpan.replaceWith(input);                            // Swap in input for editing.
+      input.focus();                                           // Focus input immediately.
+      input.select();                                          // Select all text for quick edit.
+
+      // Save on Enter, cancel on Escape, save on blur
+      const commit = () => {                                   // Helper to save and cleanup.
+        updateTaskTitle(id, input.value);                      // Update state (ignores empty).
+      };
+      const cancel = () => {                                   // Helper to cancel and re-render.
+        render();                                              // Re-render to restore original span.
+      };
+
+      input.addEventListener("keydown", (e) => {               // Keyboard handling.
+        if (e.key === "Enter") commit();                       // Enter => save.
+        if (e.key === "Escape") cancel();                      // Esc => cancel.
+      });
+      input.addEventListener("blur", commit);                  // Blur => save.
+    }
+
+    /* ===========
+       Bootstrapping
+       =========== */
+
+    load();    // Load initial state from localStorage.
+    render();  // First render of the UI.
+  </script>
+</body>
+</html>
